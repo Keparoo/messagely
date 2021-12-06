@@ -2,6 +2,8 @@
 
 const { BCRYPT_WORK_FACTOR } = require('../config');
 const ExpressError = require('../expressError');
+const bcrypt = require('bcrypt');
+const db = require('../db');
 
 /** User of the site. */
 
@@ -22,21 +24,21 @@ class User {
 			// current_timestamp returns date & time with timezone. local_timestamp returns date & time without timezone
 			const result = await db.query(
 				`INSERT INTO users (
-                    username,
-                    password,
-                    first_name,
-                    last_name,
-                    phone,
-                    join_at,
-                    last_login_at)
-                VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
-                RETURNING username, password, first_name, last_name, phone`,
+		            username,
+		            password,
+		            first_name,
+		            last_name,
+		            phone,
+		            join_at,
+		            last_login_at)
+		        VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
+		        RETURNING username, password, first_name, last_name, phone`,
 				[ username, hashedPassword, first_name, last_name, phone ]
 			);
 
 			return result.rows[0];
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -57,7 +59,7 @@ class User {
 			}
 			return false;
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -76,7 +78,7 @@ class User {
 				throw new ExpressError(`User does not exist: ${username}`, 404);
 			}
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -93,7 +95,7 @@ class User {
 
 			return result.rows;
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -119,7 +121,7 @@ class User {
 			}
 			return result.rows[0];
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -146,16 +148,16 @@ class User {
 				id: m.id,
 				to_user: {
 					username: m.to_username,
-					first_name: u.first_name,
-					last_name: u.last_name,
-					phone: u.phone
+					first_name: m.first_name,
+					last_name: m.last_name,
+					phone: m.phone
 				},
 				body: m.body,
 				sent_at: m.sent_at,
 				read_at: m.read_at
 			}));
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 
@@ -182,16 +184,16 @@ class User {
 				id: m.id,
 				from_user: {
 					username: m.from_username,
-					first_name: u.first_name,
-					last_name: u.last_name,
-					phone: u.phone
+					first_name: m.first_name,
+					last_name: m.last_name,
+					phone: m.phone
 				},
 				body: m.body,
 				sent_at: m.sent_at,
 				read_at: m.read_at
 			}));
 		} catch (err) {
-			return next(err);
+			return err;
 		}
 	}
 }
