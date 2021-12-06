@@ -67,11 +67,14 @@ class User {
 		try {
 			const result = await db.query(
 				`UPDATE users
-                SET last_login_at current_timestamp
+                SET last_login_at = current_timestamp
                 WHERE username = $1
                 RETURNING username`,
 				[ username ]
 			);
+			if (!result.rows[0]) {
+				throw new ExpressError(`User does not exist: ${username}`, 404);
+			}
 		} catch (err) {
 			return next(err);
 		}
@@ -80,7 +83,19 @@ class User {
 	/** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
-	static async all() {}
+	static async all() {
+		try {
+			const result = await db.query(
+				`SELECT username, first_name, last_name, phone
+                FROM users
+                ORDER BY username`
+			);
+
+			return result.rows;
+		} catch (err) {
+			return next(err);
+		}
+	}
 
 	/** Get: get user by username
    *
@@ -91,7 +106,22 @@ class User {
    *          join_at,
    *          last_login_at } */
 
-	static async get(username) {}
+	static async get(username) {
+		try {
+			const result = await db.query(
+				`SELECT username, first_name, last_name, phone, join_at, last_login_at
+                FROM users
+                WHERE username = $1`,
+				[ username ]
+			);
+			if (!result.rows[0]) {
+				throw new ExpressError(`User does not exist: ${username}`, 404);
+			}
+			return result.rows[0];
+		} catch (err) {
+			return next(err);
+		}
+	}
 
 	/** Return messages from this user.
    *
@@ -101,7 +131,33 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-	static async messagesFrom(username) {}
+	static async messagesFrom(username) {
+		try {
+			const result = await db.query(
+				`SELECT m.id, m.to_username, m.body, m.sent_at, m.read_at, u.first_name, u.last_name, u.phone
+                FROM messages m
+                JOIN users u
+                ON m.to_username = u.username
+                WHERE from_username = $1`,
+				[ username ]
+			);
+
+			return result.rows.map((m) => ({
+				id: m.id,
+				to_user: {
+					username: m.to_username,
+					first_name: u.first_name,
+					last_name: u.last_name,
+					phone: u.phone
+				},
+				body: m.body,
+				sent_at: m.sent_at,
+				read_at: m.read_at
+			}));
+		} catch (err) {
+			return next(err);
+		}
+	}
 
 	/** Return messages to this user.
    *
