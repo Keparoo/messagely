@@ -1,31 +1,76 @@
 /** User class for message.ly */
 
-
+const { BCRYPT_WORK_FACTOR } = require('../config');
+const ExpressError = require('../expressError');
 
 /** User of the site. */
 
 class User {
-
-  /** register new user -- returns
+	/** register new user -- returns
    *    {username, password, first_name, last_name, phone}
    */
 
-  static async register({username, password, first_name, last_name, phone}) { }
+	static async register({ username, password, first_name, last_name, phone }) {
+		if (!username || !password || !first_name || !last_name || !phone) {
+			throw new ExpressError(
+				'username, password, first name, last name and phone are all required!',
+				400
+			);
+		}
+		try {
+			const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+			// current_timestamp returns date & time with timezone. local_timestamp returns date & time without timezone
+			const result = await db.query(
+				`INSERT INTO users (
+                    username,
+                    password,
+                    first_name,
+                    last_name,
+                    phone,
+                    join_at,
+                    last_login_at)
+                VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
+                RETURNING username, password, first_name, last_name, phone`,
+				[ username, hashedPassword, first_name, last_name, phone ]
+			);
 
-  /** Authenticate: is this username/password valid? Returns boolean. */
+			return result.rows[0];
+		} catch (err) {
+			return next(err);
+		}
+	}
 
-  static async authenticate(username, password) { }
+	/** Authenticate: is this username/password valid? Returns boolean. */
 
-  /** Update last_login_at for user */
+	static async authenticate(username, password) {
+		try {
+			const result = await db.query(
+				`SELECT password
+                FROM users
+                WHERE username = $1`,
+				[ username ]
+			);
+			const user = result.rows[0];
 
-  static async updateLoginTimestamp(username) { }
+			if (user) {
+				return (await bcrypt.compare(password, user.password)) === true;
+			}
+			return false;
+		} catch (err) {
+			return next(err);
+		}
+	}
 
-  /** All: basic info on all users:
+	/** Update last_login_at for user */
+
+	static async updateLoginTimestamp(username) {}
+
+	/** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
-  static async all() { }
+	static async all() {}
 
-  /** Get: get user by username
+	/** Get: get user by username
    *
    * returns {username,
    *          first_name,
@@ -34,9 +79,9 @@ class User {
    *          join_at,
    *          last_login_at } */
 
-  static async get(username) { }
+	static async get(username) {}
 
-  /** Return messages from this user.
+	/** Return messages from this user.
    *
    * [{id, to_user, body, sent_at, read_at}]
    *
@@ -44,9 +89,9 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesFrom(username) { }
+	static async messagesFrom(username) {}
 
-  /** Return messages to this user.
+	/** Return messages to this user.
    *
    * [{id, from_user, body, sent_at, read_at}]
    *
@@ -54,8 +99,7 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) { }
+	static async messagesTo(username) {}
 }
-
 
 module.exports = User;
