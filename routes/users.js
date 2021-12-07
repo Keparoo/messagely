@@ -25,6 +25,15 @@ router.get('/', ensureLoggedIn, async function(req, res, next) {
  *
  **/
 
+router.get('/:username', ensureCorrectUser, async function(req, res, next) {
+	try {
+		const user = await User.get(req.params.username);
+		return res.json({ user });
+	} catch (err) {
+		return next(err);
+	}
+});
+
 /** GET /:username/to - get messages to user
  *
  * => {messages: [{id,
@@ -35,10 +44,10 @@ router.get('/', ensureLoggedIn, async function(req, res, next) {
  *
  **/
 
-route.get('/:username', ensureCorrectUser, async function(req, res, next) {
+router.get('/:username/to', ensureCorrectUser, async function(req, res, next) {
 	try {
-		const user = await User.get(req.params.username);
-		return res.json({ user });
+		const messages = await User.messagesTo(req.params.username);
+		return res.json({ messages });
 	} catch (err) {
 		return next(err);
 	}
