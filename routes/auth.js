@@ -4,8 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const ExpressError = require('../expressError');
 const db = require('../db');
-const User = require('./users');
-const { authenticate, updateLoginTimestamp } = require('../models/user');
+const User = require('../users');
 
 /** POST /login - login: {username, password} => {token}
  *
