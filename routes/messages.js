@@ -23,12 +23,16 @@ router.get('/:id', ensureLoggedIn, async function(req, res, next) {
 		const username = req.user.username;
 		const message = await Message.get(req.params.id);
 		if (
-			username === message.from_user.username ||
-			username === message.to_user.username
+			message.to_user.username !== username &&
+			message.from_user.username !== username
 		) {
-			return res.json({ message });
+			// username === message.from_user.username ||
+			// username === message.to_user.username
+			throw new ExpressError(`Not allowed to read this message`, 401);
+			// return res.json({ message });
 		}
-		throw new ExpressError(`Not allowed to read this message`, 401);
+		return res.json({ message });
+		// throw new ExpressError(`Not allowed to read this message`, 401);
 	} catch (err) {
 		return next(err);
 	}
